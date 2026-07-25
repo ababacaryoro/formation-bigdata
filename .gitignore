@@ -10,6 +10,10 @@ __pycache__/
 .DS_Store
 *.DS_Store
 
+# Data
+
+00-data/*.csv
+
 # Distribution / packaging
 .Python
 build/
