@@ -18,11 +18,13 @@ dependencies = [
     "plotly>=6.9.0",
     "polars>=1.43.0",
     "psutil>=7.2.2",
+    "psycopg[binary]>=3.3.4",
     "pyarrow>=17",
     "pymongo>=4.17.0",
     "pyspark>=4.0",
     "rapidfuzz>=3.14.5",
     "seaborn>=0.13.2",
+    "sqlalchemy>=2.0.51",
     "tqdm>=4.69.1",
 ]
 

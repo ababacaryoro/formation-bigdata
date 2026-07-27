@@ -13,6 +13,7 @@ __pycache__/
 # Data
 00-data/*.csv
 temp/
+resultats/
 
 # Distribution / packaging
 .Python
