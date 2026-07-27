@@ -11,8 +11,8 @@ __pycache__/
 *.DS_Store
 
 # Data
-
 00-data/*.csv
+temp/
 
 # Distribution / packaging
 .Python
