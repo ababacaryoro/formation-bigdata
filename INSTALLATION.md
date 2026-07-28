@@ -64,7 +64,8 @@ Si la commande n'est pas reconnue, voir la section Dépannage.
 
 ## 5. Récupérer le dépôt de la formation
 
-Dans le dossier de votre choix :
+Aller sur la page github https://github.com/ababacaryoro/formation-bigdata.git puis cliquer sur Fork, après vous être identifiés. 
+Dans le dossier de votre choix (remplacer __ababacaryoro__ par le nom de votre compte) :
 
 ```bash
 git clone https://github.com/ababacaryoro/formation-bigdata.git
