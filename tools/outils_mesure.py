@@ -1,6 +1,6 @@
-"""Outils de mesure partagés — module `02-franchir-le-mur`.
+"""Outils de mesure partagés.
 
-Tous les notebooks du bloc importent ce module, afin que les quatre outils
+Plusieurs notebooks importent ce module, afin que les quatre outils
 comparés (pandas, Polars, DuckDB, Dask) soient mesurés exactement de la même
 façon. Les résultats sont accumulés dans `resultats/` et rassemblés par le
 notebook de comparaison.
