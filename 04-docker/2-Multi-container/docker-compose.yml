@@ -1,0 +1,87 @@
+# Formation Big Data — ANSD / Data Innovation Lab
+# Module 04 — Docker : une pile à deux services
+#
+# Cinq passages sont à vérifier, repérés par « À VÉRIFIER ».
+# Le reste est fourni : ne perdez pas de temps sur l'indentation du YAML.
+#
+# Démarrage :  docker compose up -d
+# Journaux  :  docker compose logs -f
+# Arrêt     :  docker compose down
+
+services:
+
+  # ---------------------------------------------------------------------
+  # Service 1 — la base de données PostgreSQL
+  # ---------------------------------------------------------------------
+  postgres:
+    image: postgres:16
+    container_name: formation_postgres
+    restart: unless-stopped
+
+    # Les identifiants ne sont JAMAIS écrits ici : ils viennent du fichier .env,
+    # qui n'est pas versionné dans Git.
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # À VÉRIFIER (1/5) — Vérifiez que les noms des variables POSTGRES_USER et POSTGRES_PASSWORD 
+      # existent bien dans le fichier .env.
+
+    ports:
+      # Format : "port sur votre machine:port dans le conteneur"
+      # PostgreSQL écoute sur 5432 à l'intérieur du conteneur.
+      - 5444:5432
+      # À VÉRIFIER (2/5) — publiez-le sur le port 5432 de votre machine (à gauche).
+      # Si ce port est déjà occupé chez vous, utilisez 5433 à gauche.
+
+    volumes:
+      # À VÉRIFIER (3/5) — montez le volume nommé `donnees_postgres`
+      # sur /var/lib/postgresql/data, dossier où PostgreSQL écrit ses données.
+      # Format : nom_du_volume:/chemin/dans/le/conteneur
+      - donnees_postgres:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ---------------------------------------------------------------------
+  # Service 2 — l'environnement de travail Jupyter
+  # ---------------------------------------------------------------------
+  jupyter:
+    build: .
+    container_name: formation_jupyter
+    restart: unless-stopped
+
+    ports:
+      - "8888:8888"
+
+    volumes:
+      # À VÉRIFIER (4/5) — montez le dossier `notebooks` de VOTRE machine
+      # sur /home/travail/notebooks dans le conteneur.
+      # Format : ./dossier_local:/chemin/dans/le/conteneur
+      - ./notebooks:/home/travail/notebooks
+      #
+      # Différence avec le volume de PostgreSQL : ici on relie un dossier
+      # existant de votre disque, là on demandait à Docker de gérer un espace
+      # de stockage. Les deux survivent à l'arrêt du conteneur.
+
+    # Ces variables permettront au notebook de se connecter à la base sans
+    # que vous ayez à recopier les identifiants.
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOTE: postgres
+      POSTGRES_PORT: 5432
+
+    # Jupyter ne démarre qu'une fois la base prête à répondre.
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+# -------------------------------------------------------------------------
+# Les volumes gérés par Docker
+# -------------------------------------------------------------------------
+volumes:
+  # Une ligne suffit : le nom du volume suivi de deux points.
+  donnees_postgres:

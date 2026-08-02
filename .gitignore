@@ -15,6 +15,7 @@ __pycache__/
 temp/
 resultats/
 *.parquet
+*.tar
 
 # Distribution / packaging
 .Python
