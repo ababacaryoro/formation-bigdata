@@ -1,0 +1,25 @@
+# Formation Big Data — ANSD
+# Normalisation des fins de ligne.
+#
+# Sans cette règle, Git convertit les fichiers en CRLF sur Windows, et Bash
+# échoue alors avec un message obscur : « bad interpreter: /bin/bash^M ».
+# Les scripts shell et les fichiers lus par les conteneurs Linux doivent
+# rester en LF, quel que soit le système du poste.
+
+* text=auto
+
+*.sh        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+Dockerfile  text eol=lf
+.env*       text eol=lf
+
+*.ipynb     text eol=lf
+*.py        text eol=lf
+*.md        text eol=lf
+
+# Fichiers binaires : aucune conversion
+*.parquet   binary
+*.png       binary
+*.jpg       binary
+*.pdf       binary

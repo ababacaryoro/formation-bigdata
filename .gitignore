@@ -16,6 +16,8 @@ temp/
 resultats/
 *.parquet
 *.tar
+*.json
+*.jsonL
 
 # Distribution / packaging
 .Python

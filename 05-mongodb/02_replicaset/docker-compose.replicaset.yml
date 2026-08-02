@@ -1,0 +1,46 @@
+# Formation Big Data — ANSD / Data Innovation Lab
+# Module 05 — DÉMONSTRATION : jeu de réplicas à trois nœuds
+#
+# Ce fichier est destiné à la démonstration du formateur, pas au TP.
+# Il illustre la réplication : trois serveurs portent la même donnée, l'un est
+# primaire, les deux autres secondaires. Si le primaire tombe, les survivants
+# élisent un nouveau primaire — sans intervention humaine.
+#
+#   Démarrage      :  docker compose -f docker-compose.replicaset.yml up -d
+#   Initialisation :  ./init_replicaset.sh
+#   Démonstration  :  ./demo_bascule.sh
+#   Arrêt          :  docker compose -f docker-compose.replicaset.yml down -v
+
+services:
+
+  mongo1:
+    image: mongo:7
+    container_name: rs_mongo1
+    command: ["mongod", "--replSet", "rsANSD", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27021:27017"
+    volumes:
+      - rs_donnees1:/data/db
+
+  mongo2:
+    image: mongo:7
+    container_name: rs_mongo2
+    command: ["mongod", "--replSet", "rsANSD", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27022:27017"
+    volumes:
+      - rs_donnees2:/data/db
+
+  mongo3:
+    image: mongo:7
+    container_name: rs_mongo3
+    command: ["mongod", "--replSet", "rsANSD", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27023:27017"
+    volumes:
+      - rs_donnees3:/data/db
+
+volumes:
+  rs_donnees1:
+  rs_donnees2:
+  rs_donnees3:

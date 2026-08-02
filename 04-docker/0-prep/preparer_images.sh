@@ -4,7 +4,8 @@
 # Objectif : éviter que trente postes téléchargent simultanément plusieurs
 # gigaoctets derrière un parefeu. Les images sont exportées dans une
 # archive, distribuée par clé USB, puis chargées sur chaque poste.
-#
+
+# # Sous Windows : exécuter depuis Git Bash, non depuis PowerShell.
 #   Sur votre machine :   ./preparer_images.sh
 #   Sur chaque poste :    docker load -i images_formation.tar
 set -euo pipefail

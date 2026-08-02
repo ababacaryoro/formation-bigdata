@@ -166,9 +166,8 @@ soit activée dans le BIOS.
 - Sinon, l'activation se fait au démarrage de la machine, dans le BIOS — et
   requiert souvent des droits d'administration
 
-**Si cela reste bloqué, signalez-le immédiatement** : une solution de repli est
-prévue, avec les services hébergés sur une machine unique accessible par le
-réseau. Ne perdez pas la matinée à essayer.
+**Si cela reste bloqué, signalez-le immédiatement** : Suivez sur la démonstration de 
+l'instructeur ou votre voisin. Ne perdez pas la matinée à essayer.
 
 ---
 

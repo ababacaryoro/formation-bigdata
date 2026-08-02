@@ -1,0 +1,65 @@
+# Formation Big Data — ANSD / Data Innovation Lab
+# Module 05 — MongoDB
+#
+#   Démarrage :  docker compose up -d
+#   Interface  :  http://localhost:8081   (mongo-express)
+#   Jupyter    :  http://localhost:8888   (jeton : formation)
+#   Arrêt      :  docker compose down
+
+services:
+
+  mongo:
+    image: mongo:7
+    container_name: formation_mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    ports:
+      - "27017:27017"
+    volumes:
+      - donnees_mongo:/data/db
+      - ./data:/data/import          # les fichiers à importer
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Interface web : voir les documents plutôt que les imaginer
+  mongo-express:
+    image: mongo-express:1
+    container_name: formation_mongo_express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  jupyter:
+    build: .
+    # ou formation-jupyter:1.0
+    container_name: formation_jupyter_mongo
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/travail/notebooks
+      - ../data:/home/travail/data
+    environment:
+      MONGO_USER: ${MONGO_USER}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_HOTE: mongo
+      MONGO_PORT: 27017
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  donnees_mongo:
