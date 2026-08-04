@@ -1,0 +1,67 @@
+# Formation Big Data — ANSD / Data Innovation Lab
+# Image Spark avec les connecteurs Kafka et MongoDB DÉJÀ INTÉGRÉS.
+#
+# Pourquoi cette image existe : par défaut, Spark télécharge ses connecteurs au
+# premier lancement (option --packages). Ici tout est figé dans l'image, construite
+# une seule fois sur une machine connectée.
+#
+#   docker build -f Dockerfile.spark -t formation-spark:1.0 .
+
+FROM apache/spark:4.1.2-scala2.13-java17-python3-ubuntu
+
+USER root
+
+# ---------------------------------------------------------------------------
+# Versions — elles doivent rester cohérentes entre elles :
+#   spark-sql-kafka : sa version suit EXACTEMENT celle de Spark
+#   mongo-spark     : la 11.x est la première à supporter Spark 4 (Scala 2.13)
+# ---------------------------------------------------------------------------
+ENV SPARK_VERSION=4.1.2 \
+    SCALA_VERSION=2.13 \
+    MONGO_CONNECTOR_VERSION=11.1.0
+
+# Bibliothèques Python : travaux pratiques (JupyterLab) et projets
+RUN pip install --no-cache-dir \
+        jupyterlab==4.* \
+        pymongo \
+        psycopg2-binary \
+        sqlalchemy \
+        pandas \
+        pyspark \
+        confluent-kafka
+
+# ---------------------------------------------------------------------------
+# Résolution des connecteurs et de TOUTES leurs dépendances transitives.
+#
+# On ne copie pas les archives une par une : spark-sql-kafka dépend de
+# kafka-clients, commons-pool2 et spark-token-provider-kafka. Les oublier
+# produit une erreur à l'exécution — le jour de la formation, en salle.
+#
+# On laisse donc Ivy faire la résolution complète pendant la construction,
+# puis on recopie l'ensemble dans le dossier des archives de Spark.
+# ---------------------------------------------------------------------------
+RUN /opt/spark/bin/spark-submit \
+        --packages org.apache.spark:spark-sql-kafka-0-10_${SCALA_VERSION}:${SPARK_VERSION},org.mongodb.spark:mongo-spark-connector_${SCALA_VERSION}:${MONGO_CONNECTOR_VERSION},org.postgresql:postgresql:42.7.4 \
+        --conf spark.jars.ivy=/tmp/ivy \
+        --class org.apache.spark.examples.SparkPi \
+        /opt/spark/examples/jars/spark-examples_${SCALA_VERSION}-${SPARK_VERSION}.jar 1 \
+    && find /tmp/ivy -name "*.jar" -exec cp -n {} /opt/spark/jars/ \; \
+    && rm -rf /tmp/ivy
+
+# Contrôle : les archives essentielles sont-elles présentes ?
+# Si cette étape échoue, l'image ne doit pas être publiée.
+RUN for archive in spark-sql-kafka kafka-clients commons-pool2 mongo-spark postgresql; do \
+        ls /opt/spark/jars/ | grep -q "$archive" \
+            || { echo "MANQUANT : $archive"; exit 1; }; \
+    done && echo "→ Connecteurs intégrés à l'image"
+
+WORKDIR /travail
+
+# L'utilisateur "spark" de l'image de base n'a pas de HOME valide
+# (HOME=/nonexistent par défaut) → Jupyter plante en essayant d'y écrire.
+RUN mkdir -p /home/spark \
+    && chown -R spark:spark /home/spark /travail
+
+ENV HOME=/home/spark
+
+USER spark

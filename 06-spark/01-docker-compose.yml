@@ -1,0 +1,37 @@
+# Formation Big Data — ANSD / Data Innovation Lab
+# Module 06 — Spark
+#
+# L'image est la même que celle du socle des projets : elle embarque Spark,
+# JupyterLab et les connecteurs. Rien de nouveau à télécharger.
+#
+#   Démarrage :  docker compose -f 01-docker-compose.yml up -d
+#   JupyterLab :  http://localhost:8888   (jeton : formation)
+#   Suivi Spark : http://localhost:4040   (pendant un calcul)
+#   Arrêt      :  docker compose -f 01-docker-compose.yml down
+
+services:
+
+  spark:
+    image: formation-spark:1.0
+    container_name: formation_spark
+    restart: unless-stopped
+    ports:
+      - "8888:8888"      # JupyterLab
+      - "4040:4040"      # interface de suivi des travaux Spark
+    volumes:
+      - ./notebooks:/travail/notebooks
+      - ../00-data:/travail/donnees        # les jeux de données
+    environment:
+      DONNEES: /travail/donnees
+      # Spark tourne dans ce conteneur : donnez-lui de la mémoire, mais gardez
+      # de la marge pour votre poste. Ajustez selon votre machine.
+      SPARK_DRIVER_MEMORY: 2g
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    command: >
+      jupyter lab
+      --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+      --IdentityProvider.token=formation
+      --ServerApp.root_dir=/travail
