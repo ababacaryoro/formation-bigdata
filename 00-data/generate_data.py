@@ -4,7 +4,7 @@ Générateur de données simulées — Formation Big Data ANSD / Data Innovation
 Produit des jeux de données réalistes du domaine de la statistique publique
 sénégalaise, à volumétrie ajustable :
 
-  - individus    : fichier de recensement (le gros fichier)
+  - individus    : fichier de recensement (le gros fichier de la semaine)
   - regions      : table de référence des régions (petite, pour les jointures)
   - etat_civil   : seconde source, partiellement recouvrante, avec variantes
                    d'écriture (module appariement / rapprochement flou)
@@ -12,7 +12,16 @@ sénégalaise, à volumétrie ajustable :
 
 Les données sont volontairement imparfaites (valeurs manquantes, casse
 incohérente, âges aberrants, doublons, formats de date multiples) afin de
-reproduire les défauts habituels des données.
+reproduire les défauts habituels des données administratives.
+
+IMPORTANT — cohérence entre les jeux
+------------------------------------
+Le fichier `etat_civil` est dérivé de `individus`, et le fichier de vérité
+terrain rattache les deux. Régénérer `individus` seul rend donc la vérité
+caduque : les identifiants ne correspondent plus, et tout appariement affiche
+un rappel nul.
+
+Régénérez toujours l'ensemble : `--jeu tous`.
 
 Exemples
 --------
