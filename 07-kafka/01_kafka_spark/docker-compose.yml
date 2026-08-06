@@ -1,6 +1,7 @@
 # Formation Big Data — ANSD / Data Innovation Lab
 # Module 07 — Kafka
 #
+# Ne pas oublier de créer un fichier .env à partir du fichier .env.example et de le compléter avec vos identifiants MongoDB.
 #   Démarrage  :  docker compose up -d
 #   Kafka UI   :  http://localhost:8085
 #   JupyterLab :  http://localhost:8888   (jeton : formation)
@@ -95,7 +96,7 @@ services:
       - "4040:4040"
     volumes:
       - ./notebooks:/travail/notebooks
-      - ../00-data:/travail/donnees
+      - ../../00-data:/travail/donnees
     environment:
       DONNEES: /travail/donnees
       KAFKA_BOOTSTRAP: kafka:9092
