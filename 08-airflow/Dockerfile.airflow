@@ -1,0 +1,15 @@
+# Formation Big Data — ANSD / Data Innovation Lab
+# Module 08 — Airflow
+#
+# Image Airflow avec les librairies nécessaires pré-installées,
+# pour éviter l'installation à chaud via _PIP_ADDITIONAL_REQUIREMENTS
+# (lente, non recommandée en prod, et refaite à chaque démarrage du conteneur).
+#
+# Build :  docker build -f Dockerfile.airflow -t formation-airflow:3.3.0 .
+
+FROM apache/airflow:3.3.0
+
+# Installer les librairies nécessaires aux tâches du DAG
+RUN pip install --no-cache-dir \
+    pymongo \
+    psycopg2-binary

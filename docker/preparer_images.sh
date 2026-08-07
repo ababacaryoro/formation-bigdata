@@ -94,22 +94,30 @@ docker build --platform "$PLATEFORME" \
 
 echo ""
 echo "════════════════════════════════════════════════════════════"
-echo " 3/4 — Construction de l'image Spark avec connecteurs"
+echo " 3/4 — Construction de l'image Spark et Airflow avec connecteurs"
 echo "════════════════════════════════════════════════════════════"
 echo " Cette étape télécharge les connecteurs Kafka, MongoDB et PostgreSQL"
 echo " ainsi que TOUTES leurs dépendances transitives, et les fige dans"
-echo " l'image. C'est l'étape critique : sans elle, Spark tenterait de les"
-echo " télécharger le jour de la formation."
+echo " l'image."
+echo ""
+echo "+++ Pour Spark"
 echo ""
 docker build --platform "$PLATEFORME" \
     -f ./Dockerfile.spark -t formation-spark:1.0 .
+
+echo ""
+echo "+++ Pour Airflow"
+echo ""
+docker build --platform "$PLATEFORME" \
+    -f ./Dockerfile.airflow -t formation-airflow:3.3.0 .
+
 
 echo ""
 echo "════════════════════════════════════════════════════════════"
 echo " Contrôle d'architecture avant export"
 echo "════════════════════════════════════════════════════════════"
 mauvaises=0
-for image in "${IMAGES_A_TELECHARGER[@]}" formation-jupyter:1.0 formation-spark:1.0; do
+for image in "${IMAGES_A_TELECHARGER[@]}" formation-jupyter:1.0 formation-spark:1.0 formation-airflow:3.3.0; do
   arch=$(docker image inspect --format '{{.Architecture}}' "$image")
   if [ "$arch" = "amd64" ]; then
     echo "  ✔ $image ($arch)"
@@ -132,7 +140,8 @@ echo "════════════════════════�
 docker save -o "$ARCHIVE" \
   "${IMAGES_A_TELECHARGER[@]}" \
   formation-jupyter:1.0 \
-  formation-spark:1.0
+  formation-spark:1.0 \
+  formation-airflow:3.3.0
 
 echo ""
 echo "Terminé : $(du -h "$ARCHIVE" | cut -f1)"

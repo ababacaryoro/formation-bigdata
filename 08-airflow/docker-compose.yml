@@ -1,0 +1,90 @@
+# Formation Big Data — ANSD / Data Innovation Lab
+# Module 08 — Airflow
+#
+#   Démarrage :  docker compose up -d
+#   Airflow    :  http://localhost:8080
+#   Arrêt      :  docker compose down
+#
+# Le premier démarrage prend plusieurs minutes : Airflow initialise sa base. Voir les logs pour suivre la progression.
+#
+# ATTENTION — si vous avez déjà démarré cette pile sans fichier .env, le volume
+# PostgreSQL a été créé avec les identifiants par défaut. L'image PostgreSQL
+# n'exécute son initialisation QUE sur un répertoire vide : les nouvelles
+# valeurs seraient ignorées. Dans ce cas :
+#
+#     docker compose down -v      (le -v efface les volumes)
+#     docker compose up -d
+
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: formation_airflow_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: restitution
+    ports:
+      - "5444:5432"          # 5444 côté machine : évite un PostgreSQL déjà installé
+    volumes:
+      - donnees_postgres:/var/lib/postgresql/data
+      - ./init_postgres.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mongo:
+    image: mongo:7
+    container_name: formation_airflow_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - donnees_mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+
+  airflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    image: formation-airflow:3.3.0
+    container_name: formation_airflow
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      # Airflow range ses propres métadonnées dans une base DISTINCTE de la
+      # base de restitution, créée par init_postgres.sql. Mélanger les deux
+      # fonctionne, mais rend illisible ce qui appartient à qui.
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
+        postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/airflow
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_USER}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_PASSWORD}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - journaux_airflow:/opt/airflow/logs
+    command: standalone
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+
+volumes:
+  donnees_postgres:
+  donnees_mongo:
+  journaux_airflow:
