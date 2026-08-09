@@ -213,6 +213,12 @@ Ceux des premiers modules comportent des passages à compléter, marqués
 `À COMPLÉTER` ; les suivants sont entièrement fournis.
 
 
+--- 
+
+## Fichiers partagés 
+
+Certains éléments utiles pour le cours (slides, images docker, ...) sont partagés dans l'[espace drive](https://drive.google.com/drive/folders/1bOeOwH7gqH6uQuXeYZSuNeklg5X0uiyc?usp=drive_link). 
+
 ---
 
 *Formation dispensée par Ababacar Yoro BA, consultant indépendant.*
