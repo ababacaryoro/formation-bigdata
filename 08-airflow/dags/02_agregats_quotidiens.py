@@ -29,17 +29,40 @@ from airflow.sdk import dag, task
 from airflow.timetables.interval import CronDataIntervalTimetable
 
 # --------------------------------------------------------------------------
-# Ces valeurs seraient normalement des « connexions » Airflow, définies dans
-# l'interface. Elles figurent ici en clair pour rester lisibles, et doivent
-# correspondre à votre fichier .env.
+# Les identifiants de connexion ne sont JAMAIS en dur dans le code du DAG.
+# Ils sont déclarés comme des « connexions » Airflow — ici via les variables
+# d'environnement AIRFLOW_CONN_* du docker-compose, qui reprennent elles-
+# mêmes les valeurs du fichier .env. On les relit à l'exécution de chaque
+# tâche, jamais au chargement du module.
+#
+#   AIRFLOW_CONN_MONGO_FLUX           -> connexion "mongo_flux"
+#   AIRFLOW_CONN_POSTGRES_RESTITUTION -> connexion "postgres_restitution"
 # --------------------------------------------------------------------------
-MONGO_URI = "mongodb://ansd:changez_moi_2026@mongo:27017"
-POSTGRES = {
-    "host": "postgres",
-    "dbname": "restitution",
-    "user": "ansd",
-    "password": "changez_moi_2026",
-}
+
+ID_CONNEXION_MONGO = "mongo_flux"
+ID_CONNEXION_POSTGRES = "postgres_restitution"
+
+
+def obtenir_uri_mongo() -> str:
+    """Reconstruit l'URI Mongo à partir de la connexion Airflow."""
+    from airflow.hooks.base import BaseHook
+
+    connexion = BaseHook.get_connection(ID_CONNEXION_MONGO)
+    return connexion.get_uri()
+
+
+def obtenir_params_postgres() -> dict:
+    """Reconstruit les paramètres psycopg2 à partir de la connexion Airflow."""
+    from airflow.hooks.base import BaseHook
+
+    connexion = BaseHook.get_connection(ID_CONNEXION_POSTGRES)
+    return {
+        "host": connexion.host,
+        "port": connexion.port or 5432,
+        "dbname": connexion.schema,
+        "user": connexion.login,
+        "password": connexion.password,
+    }
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -112,7 +135,7 @@ def agregats_quotidiens():
         fin = dt.fromisoformat(periode["fin"])
         alea = random.Random(2026)
 
-        client = MongoClient(MONGO_URI)
+        client = MongoClient(obtenir_uri_mongo())
         collection = client["flux"]["actes"]
 
         # Idempotence : on repart d'un jeu propre plutôt que d'empiler
@@ -151,7 +174,7 @@ def agregats_quotidiens():
         """
         from pymongo import MongoClient
 
-        client = MongoClient(MONGO_URI)
+        client = MongoClient(obtenir_uri_mongo())
         nombre = client["flux"]["actes"].count_documents({
             "horodatage": {"$gte": periode["debut"], "$lt": periode["fin"]}
         })
@@ -183,7 +206,7 @@ def agregats_quotidiens():
             return 0
 
         # --- 1. Agrégation, côté MongoDB -----------------------------------
-        client = MongoClient(MONGO_URI)
+        client = MongoClient(obtenir_uri_mongo())
         resultats = list(client["flux"]["actes"].aggregate([
             {"$match": {"horodatage": {"$gte": periode["debut"],
                                        "$lt": periode["fin"]}}},
@@ -197,7 +220,7 @@ def agregats_quotidiens():
         # --- 2. Écriture dans PostgreSQL -----------------------------------
         jour = periode["debut"][:10]
 
-        connexion = psycopg2.connect(**POSTGRES)
+        connexion = psycopg2.connect(**obtenir_params_postgres())
         with connexion, connexion.cursor() as curseur:
             curseur.execute("""
                 CREATE TABLE IF NOT EXISTS agregats_actes (
@@ -231,7 +254,7 @@ def agregats_quotidiens():
         """Vérifie la cohérence de la table de restitution."""
         import psycopg2
 
-        connexion = psycopg2.connect(**POSTGRES)
+        connexion = psycopg2.connect(**obtenir_params_postgres())
         with connexion, connexion.cursor() as curseur:
             curseur.execute("SELECT COUNT(*), COUNT(DISTINCT jour), "
                             "COALESCE(SUM(effectif), 0) FROM agregats_actes")

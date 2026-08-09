@@ -74,6 +74,11 @@ services:
         postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/airflow
       _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_USER}
       _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_PASSWORD}
+      # --- Connexions exposées aux DAGs ---
+      AIRFLOW_CONN_POSTGRES_RESTITUTION: >-
+        postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/restitution
+      AIRFLOW_CONN_MONGO_FLUX: >-
+        mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017
     volumes:
       - ./dags:/opt/airflow/dags
       - journaux_airflow:/opt/airflow/logs
