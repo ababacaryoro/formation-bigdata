@@ -60,7 +60,21 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv --version
 ```
 
-Si la commande n'est pas reconnue, voir la section Dépannage.
+Si la commande n'est pas reconnue, c'est peut être dû au fait que la commande n'est pas enregistrée dans les variables d'environnement. Il faut donc exécuter dans le terminal le code suivant, en adaptant : 
+
+Pour Windows (remplacer `USERPROFILE` par votre nom d'utilisateur de votre machine )
+```bash
+$env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
+```
+
+Pour Linux/Mac
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+voir la section Dépannage.
 
 ## 5. Récupérer le dépôt de la formation
 
@@ -96,7 +110,9 @@ Tout le monde obtient ainsi **exactement le même environnement**, ce qui évite
 2. Tapez **« Python: Select Interpreter »** et validez.
 3. Choisissez l'interpréteur situé dans `.venv` du projet (il est en général proposé en tête de liste, avec la mention *Recommended*).
 
-Ouvrez ensuite un notebook, par exemple `01-limites-du-poste/notebooks/01_ca_marche.ipynb`. En haut à droite, cliquez sur **« Select Kernel »** → *Python Environments* → l'environnement `.venv` du projet.
+Ou alors taper la commande : `.\.venv\Scripts\activate`.
+
+Ouvrez ensuite un notebook, par exemple `01-limites-du-poste/notebooks/01_pandas_en_terrain_connu.ipynb`. En haut à droite, cliquez sur **« Select Kernel »** → *Python Environments* → l'environnement `.venv` du projet.
 
 ## 8. Vérifier que tout fonctionne
 
@@ -127,6 +143,13 @@ Règle de versionnement : `pyproject.toml` et `uv.lock` sont suivis par Git ; le
 ---
 
 ## Dépannage
+
+**`Powershell` : Impossible de charger le fichier….avec UnauthorizedAccess**
+
+Si les commandes sur le terminal ne marchent pas sur Windows, tapez dans le terminal : 
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+```
 
 **`uv` : commande introuvable après installation**
 Fermez complètement le terminal (et VS Code) puis rouvrez-les : la variable `PATH` n'est prise en compte qu'au démarrage d'une nouvelle session.
