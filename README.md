@@ -217,7 +217,10 @@ Ceux des premiers modules comportent des passages à compléter, marqués
 
 ## Fichiers partagés 
 
-Certains éléments utiles pour le cours (slides, images docker, ...) sont partagés dans l'[espace drive](https://drive.google.com/drive/folders/1bOeOwH7gqH6uQuXeYZSuNeklg5X0uiyc?usp=drive_link). 
+- Pour échanger en live, un document word est accessible via [ce lien](https://1drv.ms/w/c/ab584826bfa6bf60/IQBOcU0ZUqsPRLMcey5akGQDAWrdEYzUNFqNViYasLywwT8?e=vJRQbA). 
+
+- Certains éléments utiles pour le cours (slides, images docker, ...) sont partagés dans l'[espace drive](https://drive.google.com/drive/folders/1bOeOwH7gqH6uQuXeYZSuNeklg5X0uiyc?usp=drive_link). 
+
 
 ---
 
