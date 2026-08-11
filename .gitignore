@@ -13,6 +13,7 @@ __pycache__/
 # Data
 00-data/*.csv
 temp/
+.tmp
 resultats/
 *.parquet
 *.tar
