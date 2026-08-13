@@ -1,0 +1,60 @@
+# Formation Big Data — ANSD / Data Innovation Lab
+# Module 09 — Superset
+#
+#   Démarrage :  docker compose up -d
+#   Superset   :  http://localhost:8088
+#   Arrêt      :  docker compose down
+#
+# Le premier démarrage prend deux à trois minutes : Superset initialise sa base
+# de métadonnées, puis crée le compte administrateur.
+#
+# Ce module est AUTOPORTEUR : la table de restitution est créée et remplie de
+# données de démonstration au démarrage de PostgreSQL. Vous pouvez suivre le
+# TP sans avoir exécuté Airflow auparavant.
+
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: formation_superset_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: restitution
+    ports:
+      - "5444:5432"          # 5444 côté machine : évite un PostgreSQL déjà installé
+    volumes:
+      - donnees_postgres:/var/lib/postgresql/data
+      # ATTENTION : ce fichier doit EXISTER avant le premier démarrage.
+      # S'il est absent, Docker crée un dossier à sa place et l'initialisation
+      # de PostgreSQL échoue silencieusement.
+      - ./init_restitution.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  superset:
+    image: apache/superset:4.1.1
+    container_name: formation_superset
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      SUPERSET_LOAD_EXAMPLES: "no"
+      ADMIN_USERNAME: ${SUPERSET_USER}
+      ADMIN_PASSWORD: ${SUPERSET_PASSWORD}
+    volumes:
+      - donnees_superset:/app/superset_home
+      - ./init_superset.sh:/app/init_superset.sh:ro
+    entrypoint: ["/bin/bash", "/app/init_superset.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  donnees_postgres:
+  donnees_superset:

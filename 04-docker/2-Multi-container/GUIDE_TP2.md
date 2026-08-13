@@ -26,7 +26,7 @@ Le fichier `docker-compose.yml` fait appel à des variables. On les définit dan
 un fichier `.env`, qui n'est **jamais** versionné sur git.
 
 ```bash
-cp .env.exemple .env
+cp .env.example .env
 ```
 
 Ouvrez `.env` dans VS Code et changez le mot de passe.
