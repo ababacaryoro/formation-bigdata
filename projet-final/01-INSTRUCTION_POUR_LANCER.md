@@ -127,6 +127,8 @@ SUJET = "VOTRE_SUJET"
 Enregistrez. Puis, dans Airflow (<http://localhost:8080>) : attendez une minute que le DAG
 apparaisse, activez-le avec l'interrupteur, et déclenchez-le une première fois
 à la main.
+Pour se connecter à Airflow, le mot de passe et l'identifiant (souvent `admin`) sont inscrits dans les
+premières lignes des logs du conteneur Airflow sur Docker Desktop.
 
 Il se relancera ensuite tout seul, toutes les deux minutes.
 
