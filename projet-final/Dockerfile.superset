@@ -1,0 +1,18 @@
+# Formation Big Data — ANSD / Data Innovation Lab
+# Image Superset avec le pilote PostgreSQL intégré.
+#
+# Pourquoi cette image : installer le pilote au démarrage du conteneur exige un
+# accès réseau à chaque lancement. Ici il est figé dans l'image, construite une
+# seule fois — la pile démarre ensuite hors ligne.
+#
+#   docker build --platform linux/amd64 -f Dockerfile.superset -t formation-superset:4.1.1 .
+
+FROM apache/superset:4.1.1
+
+# L'installation de paquets exige l'utilisateur root ;
+# on revient ensuite à l'utilisateur d'origine.
+USER root
+
+RUN pip install --no-cache-dir psycopg2-binary
+
+USER superset

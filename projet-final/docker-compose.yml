@@ -1,0 +1,197 @@
+# Formation Big Data — ANSD / Data Innovation Lab
+# Projet final — la chaîne complète
+#
+#   Générateur → Kafka → Spark → MongoDB → Airflow → PostgreSQL → Superset
+#
+#   Construction :  docker compose build
+#   Démarrage    :  docker compose up -d
+#   Arrêt        :  docker compose down       (-v pour effacer les données)
+#
+# Interfaces :
+#   Superset      http://localhost:8088
+#   Airflow       http://localhost:8080
+#   Kafka UI      http://localhost:8085
+#   Mongo Express http://localhost:8081
+#
+# Le premier démarrage prend trois à quatre minutes.
+
+services:
+
+  kafka:
+    image: apache/kafka:4.0.0
+    container_name: projet_kafka
+    restart: unless-stopped
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+      KAFKA_NUM_PARTITIONS: "3"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+    volumes:
+      - donnees_kafka:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: projet_kafka_ui
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: formation
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:7
+    container_name: projet_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - donnees_mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  mongo-express:
+    image: mongo-express:1
+    container_name: projet_mongo_express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16
+    container_name: projet_postgres
+    restart: unless-stopped
+    ports:
+      - "5444:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - donnees_postgres:/var/lib/postgresql/data
+      - ./init_postgres.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Spark : c'est ici qu'on lance le producteur et le job d'ingestion
+  spark:
+    image: formation-spark:1.0
+    container_name: projet_spark
+    restart: unless-stopped
+    ports:
+      - "4040:4040"
+    command: ["tail", "-f", "/dev/null"]
+    working_dir: /projet
+    volumes:
+      - .:/projet
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      MONGO_URI: "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017"
+      PYTHONPATH: /projet
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+
+  airflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    image: formation-airflow:3.3.0
+    container_name: projet_airflow
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
+        postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/airflow
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_USER}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_PASSWORD}
+      MONGO_URI: "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017"
+      POSTGRES_HOTE: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PYTHONPATH: /opt/airflow/projet
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - .:/opt/airflow/projet
+      - journaux_airflow:/opt/airflow/logs
+    command: standalone
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+
+  superset:
+    build:
+      context: .
+      dockerfile: Dockerfile.superset
+    image: formation-superset:4.1.1
+    container_name: projet_superset
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      SUPERSET_LOAD_EXAMPLES: "no"
+      ADMIN_USERNAME: ${SUPERSET_USER}
+      ADMIN_PASSWORD: ${SUPERSET_PASSWORD}
+    volumes:
+      - donnees_superset:/app/superset_home
+      - ./init_superset.sh:/app/init_superset.sh:ro
+    entrypoint: ["/bin/bash", "/app/init_superset.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  donnees_kafka:
+  donnees_mongo:
+  donnees_postgres:
+  donnees_superset:
+  journaux_airflow:
